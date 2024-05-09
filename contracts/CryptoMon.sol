@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -69,8 +69,6 @@ contract CryptoMon is ERC721, ERC721URIStorage, Ownable {
         uint256 healthGrowthPercent
         )
         public onlyOwner {
-            // Auto-increment the skill ID
-            _typeId++;
             // New monsterType
             monsterTypes[_typeId].id = _typeId;
             monsterTypes[_typeId].name = name;
@@ -80,6 +78,8 @@ contract CryptoMon is ERC721, ERC721URIStorage, Ownable {
             monsterTypes[_typeId].attackGrowthPercent = attackGrowthPercent;
             monsterTypes[_typeId].defenseGrowthPercent = defenseGrowthPercent;
             monsterTypes[_typeId].healthGrowthPercent = healthGrowthPercent;
+            // Auto-increment the skill ID
+            _typeId++;
         
     }
 
@@ -146,16 +146,16 @@ contract CryptoMon is ERC721, ERC721URIStorage, Ownable {
             require(bytes(name).length > 0, "Name cannot be empty.");
             require(cooldown > 0, "Cooldown must be greater than zero.");
             
-            // Auto-increment the skill ID
-            _skillId++;
             // Add the new skill to the mapping
             skills[_skillId] = Skill({
                 id: _skillId,
                 name: name,
                 skillType: skillType,
                 value: value,
-                cooldown: cooldown
+                cooldown: cooldown       
         });
+            // Auto-increment the skill ID
+            _skillId++;
     }
 
     // Function to update an existing skill
@@ -231,21 +231,23 @@ contract CryptoMon is ERC721, ERC721URIStorage, Ownable {
     }
 
     // Minting
-     function mint(
+    function mint(
         uint256 monsterTypeId
     ) public {
         require(_tokenId < MAX_MONSTERS, "Max limit of monsters reached.");
 
-        _tokenId++;
-
         Monster storage monster = monsters[_tokenId];
         monsters[_tokenId].id=_tokenId;
         monsters[_tokenId].level=1;
-        monsters[_tokenId].uri="";
+        monsters[_tokenId].uri="default";
         monsters[_tokenId].monsterType = monsterTypes[monsterTypeId];
 
         _safeMint(msg.sender, _tokenId);
         _setTokenURI(_tokenId, monster.uri);
+
+        emit Transfer(address(0), msg.sender, _tokenId);
+
+        _tokenId++;
     }
 
     // Function to remove a skill from a monsterType
@@ -253,10 +255,9 @@ contract CryptoMon is ERC721, ERC721URIStorage, Ownable {
         uint256 monsterId
         ) 
         public onlyOwner {
-            require(monsters[monsterId].level > 0, "This monster does not exist.");
+            require(monsters[monsterId].level <= MAX_LEVEL, "Monster is at max level.");
             monsters[monsterId].level++;
-        }
-
+    }
 
     // The following functions are overrides required by Solidity.
     function tokenURI(uint256 tokenId)

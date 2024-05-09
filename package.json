@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/horvathpatrik01/blockchain#readme",
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
     "hardhat": "^2.22.3"
   },
