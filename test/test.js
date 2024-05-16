@@ -22,7 +22,7 @@ describe("CryptoMon Contract", function () {
     it("should mint a new monster", async function () {
       let {cryptoMon,user1} = await loadFixture(cryptoMonFixture);
       // Setup monster type first
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
       const user1Address = await user1.getAddress();
       const addressZero = "0x0000000000000000000000000000000000000000";
 
@@ -40,7 +40,7 @@ describe("CryptoMon Contract", function () {
       let {cryptoMon, user1} = await loadFixture(cryptoMonFixture);
       // Assume MAX_MONSTERS is 10000 for the tests.
       // Add a single type to mint all monsters as the same type.
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
 
       // Mint up to MAX_MONSTERS
       for (let i = 0; i < await cryptoMon.MAX_MONSTERS(); i++) {
@@ -49,7 +49,7 @@ describe("CryptoMon Contract", function () {
 
       // Attempt to mint one more should fail
       await expect(cryptoMon.connect(user1).mint()).to.be.revertedWith(
-        "Max limit of monsters reached."
+        "M1"
       );
     });
   });
@@ -57,15 +57,15 @@ describe("CryptoMon Contract", function () {
   describe("Monster Type Management", function () {
     it("should add a new monster type", async function () {
       let {cryptoMon} = await loadFixture(cryptoMonFixture);
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
       const mType = await cryptoMon.monsterTypes(0);
       expect(mType.name).to.equal("Dragon");
     });
 
     it("should update an existing monster type", async function () {
       let {cryptoMon} = await loadFixture(cryptoMonFixture);
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
-      await cryptoMon.updateMonsterType(0, "DragonX", 150, 75, 1200, 6, 4, 15);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
+      await cryptoMon.updateMonsterType(0, "DragonX", 150, 1200, 6, 15);
       const mType = await cryptoMon.monsterTypes(0);
       expect(mType.name).to.equal("DragonX");
     });
@@ -97,7 +97,7 @@ describe("CryptoMon Contract", function () {
 
     it("should add a skill to a monster type", async function () {
       let {cryptoMon} = await loadFixture(cryptoMonFixture);
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
       await cryptoMon.addSkill("Fire Breath", 200, 0, 5);
       await cryptoMon.addSkillToMonsterType(0, 0);
       const  monsters  = await cryptoMon.listMonsterTypes();
@@ -112,7 +112,7 @@ describe("CryptoMon Contract", function () {
   describe("Leveling System", function () {
     it("should add experience to the monster but don't level up", async function () {
       let {cryptoMon, user1} = await loadFixture(cryptoMonFixture);
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
       await cryptoMon.connect(user1).mint();
       await cryptoMon.connect(user1).rewardExperience(0,5);
       const monster = await cryptoMon.monsters(0);
@@ -121,7 +121,7 @@ describe("CryptoMon Contract", function () {
     });
     it("should level up a monster", async function () {
       let {cryptoMon, owner, user1} = await loadFixture(cryptoMonFixture);
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
       await cryptoMon.connect(user1).mint();
       await cryptoMon.connect(user1).rewardExperience(0,10);
       const monster = await cryptoMon.monsters(0);
@@ -129,13 +129,13 @@ describe("CryptoMon Contract", function () {
     });
     it("should not level up a monster", async function () {
       let {cryptoMon, owner, user1} = await loadFixture(cryptoMonFixture);
-      await cryptoMon.addMonsterType("Dragon", 100, 50, 1000, 5, 3, 10);
+      await cryptoMon.addMonsterType("Dragon", 100, 1000, 5, 10);
       await cryptoMon.connect(user1).mint();
-      await expect(cryptoMon.connect(owner).rewardExperience(0,10)).to.be.revertedWith("You don't own this monster.");
+      await expect(cryptoMon.connect(owner).rewardExperience(0,10)).to.be.revertedWith("PL1");
       for(let i =1; i< await cryptoMon.MAX_LEVEL();i++){
         await cryptoMon.connect(user1).rewardExperience(0,i*10);
       }
-      await expect(cryptoMon.connect(user1).rewardExperience(0,1)).to.be.revertedWith("Monster is already at max level.");
+      await expect(cryptoMon.connect(user1).rewardExperience(0,1)).to.be.revertedWith("MT3");
     });
   });
 

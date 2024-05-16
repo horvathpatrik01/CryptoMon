@@ -1,0 +1,33 @@
+Player related:
+"PL1" : "You don't own this monster."
+"PL2" : "You must have at least one monster to start a battle"
+"PL3" : "A maximum of 4 monsters can participate in a battle"
+"PL4" : "Invalid player address"
+
+Monster related:
+"M1" : "Max limit of monsters reached."
+
+Monster type related
+"MT1" : "There are no monster types"
+"MT2" : "This type of monster does not exist."
+"MT3" : "Monster is already at max level."
+
+Skill related:
+"SK1" : "This skill does not exist."
+
+Input related
+"IN1" : "Input must be greater than zero"
+"IN2" : "Input string must not be empty"
+
+Battle related:
+"BL1" : "Invalid battle index"
+"BL2" : "Battle has not started"
+"BL3" : "You are not part of this battle"
+"BL4" : "It's not your turn"
+"BL5" : "Invalid attacker ID"
+"BL6" : "Attacker is already defeated."
+"BL7" : "Skill is on cooldown"
+"BL8" : "Invalid target ID"
+"BL9" : "Attacker is already defeated."
+"BL10" : "Skill not available"
+
