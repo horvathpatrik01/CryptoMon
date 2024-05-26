@@ -6,28 +6,17 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/**
- * @title Cryptomon: A decentralized game where players can collect, trade, and battle unique digital monsters.
- * @dev This smart contract defines the core functionality of the Cryptomon game.
- *      It includes features such as monster ownership, battle system, rewards distribution, leveling, and tournaments.
- *      The code is open-source and transparent to ensure fairness and trust in the game mechanics.
- */
-contract MonsterTypes is Ownable{
-    uint8 private _skillId;
-    uint8 private _typeId;
-
-    enum SkillType {
+enum SkillType {
         NormalAttack,
         SpecialAttack,
         Heal
     }
-
-    // Definition of a Skill
+// Definition of a Skill
     struct Skill {
         uint8 id;
         string name;
         SkillType skillType;
-        uint16 multiplier;
+        uint16 multiplier; // Percent
         uint8 cooldown;
     }
 
@@ -41,19 +30,15 @@ contract MonsterTypes is Ownable{
         uint16 attackGrowthPercent; // Attack points added per level
         uint16 healthGrowthPercent; // Health points added per level
     }
-
-    // Definition of a Monster
-    struct Monster {
-        uint16 id;
-        MonsterType monsterType;
-        uint8 level;
-        uint16 experience;
-        bool evolved;
-        uint16 health;
-        uint16 maxHp;
-        uint16 attack;
-        uint8[] cooldowns;
-    }
+/**
+ * @title Cryptomon: A decentralized game where players can collect, trade, and battle unique digital monsters.
+ * @dev This smart contract defines the core functionality of the Cryptomon game.
+ *      It includes features such as monster ownership, battle system, rewards distribution, leveling, and tournaments.
+ *      The code is open-source and transparent to ensure fairness and trust in the game mechanics.
+ */
+contract MonsterTypes is Ownable{
+    uint8 private _skillId;
+    uint8 private _typeId;
 
     // Mapping from monsterType ID to MonsterType struct
     mapping(uint8 => MonsterType) public monsterTypes;
@@ -67,6 +52,9 @@ contract MonsterTypes is Ownable{
     ) Ownable(initialOwner) {
         _skillId = 0;
         _typeId = 0;
+    }
+    function getMonsterTypeNumber() public view returns (uint8){
+        return _typeId;
     }
 
     // Function to list all monster types and their associated skills
@@ -88,6 +76,12 @@ contract MonsterTypes is Ownable{
         );
         _;
     }
+
+    function getMonsterType(uint8 _monsterTypeId) public view  monsterTypeExists(_monsterTypeId) returns (MonsterType memory){
+        require(_monsterTypeId < _typeId, "M1" );
+        return monsterTypes[_monsterTypeId];
+    }
+
 
     // Function to add a new type of monster
     function addMonsterType(
@@ -162,6 +156,7 @@ contract MonsterTypes is Ownable{
         monsterTypes[typeId].skillSet.push(skills[skillId]);
     }
 
+    // TODO: test
     // Function to remove a skill from a monsterType
     function removeSkillFromMonsterTypeByIndex(
         uint8 typeId,

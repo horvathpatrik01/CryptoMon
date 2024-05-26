@@ -10,4 +10,4 @@ const defaultconfig: HardhatUserConfig = {
   solidity: "0.8.24"
 };
 
-export default optimizerconfig;
+export default defaultconfig;

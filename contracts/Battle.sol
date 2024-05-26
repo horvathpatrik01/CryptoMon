@@ -3,6 +3,20 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./CryptoMon.sol";
+enum BattleStatus {
+        PENDING,
+        PRIVATE,
+        STARTED,
+        ENDED
+    }
+struct Battle {
+        bool firstPlayersTurn;
+        BattleStatus battleStatus; /// @param battleStatus enum to indicate battle status
+        address[2] players; /// @param players address array representing players in this battle
+        uint16[] player1Monsters; /// @param player1Monsters uint array representing the player 1's cryptomons in this battle
+        uint16[] player2Monsters; /// @param player2Monsters uint array representing the player 2's cryptomons in this battle
+        address winner; /// @param winner winner address
+    }
 
 /**
  * @title Cryptomon: A decentralized game where players can collect, trade, and battle unique digital monsters.
@@ -11,40 +25,26 @@ import "./CryptoMon.sol";
  *      The code is open-source and transparent to ensure fairness and trust in the game mechanics.
  */
 contract MonBattle is Ownable {
-    /*CryptoMon public cryptoMon;
+    CryptoMon private cryptoMon;
     uint256 private _totalBattles = 0;
-    enum BattleStatus {
-        PENDING,
-        PRIVATE,
-        STARTED,
-        ENDED
-    }
-    struct Battle {
-        bool firstPlayersTurn;
-        BattleStatus battleStatus; /// @param battleStatus enum to indicate battle status
-        address[2] players; /// @param players address array representing players in this battle
-        uint16[] player1Monsters; /// @param player1Monsters uint array representing the player 1's cryptomons in this battle
-        uint16[] player2Monsters; /// @param player2Monsters uint array representing the player 2's cryptomons in this battle
-        address winner; /// @param winner winner address
-    }
-    Battle[] battles;
-*/
+
+    Battle[] private battles;
+
     constructor(address _monstersContract) Ownable(_monstersContract) {
-    // Initialize the Battles contract
-    //cryptoMon = CryptoMon(_monstersContract);
-    //_totalBattles = 0;
-}
-/*
+        // Initialize the Battles contract
+        cryptoMon = CryptoMon(_monstersContract);
+        _totalBattles = 0;
+    }
+
     event BattleCreated(address player1, address player2, uint256 battleIndex);
     event SkillUsed(
         address player,
         uint16 attackerIndex,
         uint16 targetIndex,
-        CryptoMon.SkillType skillType,
+        SkillType skillType,
         uint16 skillDamage
     );
     event BattleEnded(address winner, uint256 battleIndex);
-
 
     modifier EligibleMonsters(uint16[] memory playerMonsters) {
         require(
@@ -58,9 +58,10 @@ contract MonBattle is Ownable {
         _;
     }
 
+    // Function to start a battle with random players
     function startBattle(
         uint16[] memory playerMonsters
-    ) public EligibleMonsters(playerMonsters) {
+    ) external EligibleMonsters(playerMonsters) {
         for (uint256 i = 0; i < _totalBattles; i++) {
             if (
                 battles[i].battleStatus == BattleStatus.PENDING &&
@@ -88,14 +89,16 @@ contract MonBattle is Ownable {
                 winner: address(0)
             })
         );
-        emit BattleCreated(msg.sender, address(0), _totalBattles - 1);
+        emit BattleCreated(msg.sender, address(0), _totalBattles);
         _totalBattles++;
     }
 
+    // Function to join a battle with an other player by address
     function joinBattle(
         address otherPlayer,
         uint16[] memory playerMonsters
-    ) public EligibleMonsters(playerMonsters) {
+    ) external EligibleMonsters(playerMonsters) {
+        require(otherPlayer != msg.sender, "You can't join to yourself!");
         require(otherPlayer != address(0), "Invalid player address");
 
         for (uint256 i = 0; i < _totalBattles; i++) {
@@ -125,7 +128,7 @@ contract MonBattle is Ownable {
                 winner: address(0)
             })
         );
-        emit BattleCreated(msg.sender, otherPlayer, _totalBattles - 1);
+        emit BattleCreated(msg.sender, otherPlayer, _totalBattles);
         _totalBattles++;
     }
 
@@ -134,12 +137,12 @@ contract MonBattle is Ownable {
         uint16 attackerId,
         uint16 targetId,
         uint256 skillId
-    ) public {
+    ) external {
         require(battleIndex < _totalBattles, "Invalid battle index");
-        // require(
-        //     msg.sender == ownerOf(attackerId),
-        //     "You don't own this monster."
-        // );
+        require(
+            msg.sender == cryptoMon.ownerOf(attackerId),
+            "You don't own this monster."
+        );
         Battle memory battle = battles[battleIndex];
         require(
             battle.battleStatus == BattleStatus.STARTED,
@@ -150,7 +153,7 @@ contract MonBattle is Ownable {
             "You are not part of this battle"
         );
 
-        bool firstPlayersTurn = getCurrentPlayerIndex(battle.players);
+        bool firstPlayersTurn = msg.sender == battle.players[0];
 
         require(
             firstPlayersTurn == battle.firstPlayersTurn,
@@ -171,22 +174,21 @@ contract MonBattle is Ownable {
         }
         require(isValidAttacker, "Invalid attacker ID");
 
-        Monster memory attacker = cryptoMon.monsters[attackerId];
+        // CryptoMon.Monster memory attacker = cryptoMon.getMonster(attackerId);
+        // Retrieve the attacker monster from storage
+        Monster memory attacker = cryptoMon.getMonster(attackerId);
         // Check if the attacker is defeated
         require(attacker.health > 0, "Attacker is already defeated.");
 
-        CryptoMon.Skill memory skill = attacker.monsterType.skillSet[skillId];
+        Skill memory skill = attacker.monsterType.skillSet[skillId];
         // Check if skill cooldown is expired
-        require(
-            block.timestamp >= attacker.cooldowns[skillId],
-            "Skill is on cooldown"
-        );
+        require(attacker.cooldowns[skillId] == 0, "Skill is on cooldown");
 
         uint16[] memory enemyMonsters = firstPlayersTurn
             ? battle.player2Monsters
             : battle.player1Monsters;
 
-        if (skill.skillType == CryptoMon.SkillType.Heal) {
+        if (skill.skillType == SkillType.Heal) {
             // Check if targetId is an element of the attackerMonsters array
             bool isValidAlly = false;
             for (uint256 i = 0; i < allyMonsters.length; i++) {
@@ -208,30 +210,39 @@ contract MonBattle is Ownable {
             require(isValidTarget, "Invalid target ID");
         }
 
-        CryptoMon.Monster memory target = CryptoMon.monsters[targetId];
+        Monster memory target = cryptoMon.getMonster(targetId);
         require(target.health > 0, "Target is already defeated.");
 
         // Calculate damage based on skill type and value
         uint16 skillDamage = (attacker.attack * skill.multiplier) / 100;
 
-        if (skill.skillType == CryptoMon.SkillType.Heal) {
+        emit SkillUsed(
+            msg.sender,
+            attackerId,
+            targetId,
+            skill.skillType,
+            skillDamage
+        );
+
+        for (uint8 i = 0; i < attacker.cooldowns.length; i++) {
+            if (attacker.cooldowns[i] > 0) {
+                attacker.cooldowns[i]--;
+            }
+        }
+        // Reset cooldown for skill
+        attacker.cooldowns[skillId] = skill.cooldown;
+
+        if (skill.skillType == SkillType.Heal) {
             // Healing skill, increase target's health
             target.health = target.health + skillDamage > target.maxHp
                 ? target.maxHp
                 : target.health + skillDamage;
-            // Reset cooldown for heal skill
-            attacker.cooldowns[skillId] =
-                uint8(block.timestamp) +
-                skill.cooldown;
-            emit SkillUsed(
-                msg.sender,
-                attackerId,
-                targetId,
-                CryptoMon.SkillType.Heal,
-                skillDamage
-            );
+
             // Switch turn to the other player
             battle.firstPlayersTurn = !battle.firstPlayersTurn;
+            // Update the attacker cooldown and target monster hp
+            cryptoMon.setMonsterHealth(targetId, target.health);
+            cryptoMon.setMonsterCooldowns(attackerId, attacker.cooldowns);
             return; // Exit early, no need to proceed further
         }
 
@@ -243,15 +254,17 @@ contract MonBattle is Ownable {
         // Update cooldown for the used skill
         attacker.cooldowns[skillId] = uint8(block.timestamp) + skill.cooldown;
 
+        // Update the attacker cooldown and target monster hp
+        cryptoMon.setMonsterHealth(targetId, target.health);
+        cryptoMon.setMonsterCooldowns(attackerId, attacker.cooldowns);
         // Check if any monsters in the opposing team are defeated
         bool allDefeated = true;
         for (uint8 i = 0; i < enemyMonsters.length; i++) {
-            if (CryptoMon.monsters[enemyMonsters[i]].health > 0) {
+            if (cryptoMon.getMonster(enemyMonsters[i]).health > 0) {
                 allDefeated = false;
                 break;
             }
         }
-
         // If all monsters in the opposing team are defeated, end the battle
         if (allDefeated) {
             battle.battleStatus = BattleStatus.ENDED;
@@ -261,89 +274,22 @@ contract MonBattle is Ownable {
             // Calculate experience rewards for the winning player's monsters based on the opponent's monsters' average level
             uint8 totalLevels = 0;
             for (uint8 i = 0; i < enemyMonsters.length; i++) {
-                totalLevels += CryptoMon.monsters[enemyMonsters[i]].level;
+                totalLevels += cryptoMon.getMonster(enemyMonsters[i]).level;
             }
             uint8 avgLevel = (totalLevels + uint8(enemyMonsters.length) / 2) /
                 uint8(enemyMonsters.length); // Rounded average level
             for (uint8 i = 0; i < allyMonsters.length; i++) {
-                if (CryptoMon.monsters[allyMonsters[i]].level == CryptoMon.MAX_LEVEL) continue;
-                rewardExperience(CryptoMon.monsters[allyMonsters[i]].id, avgLevel);
+                if (
+                    cryptoMon.getMonster(allyMonsters[i]).level ==
+                    cryptoMon.MAX_LEVEL()
+                ) continue;
+                cryptoMon.rewardExperience(
+                    cryptoMon.getMonster(allyMonsters[i]).monsterId,
+                    avgLevel
+                );
             }
         }
         // Switch turn to the other player
         battle.firstPlayersTurn = !battle.firstPlayersTurn;
     }
-
-    function getCurrentPlayerIndex(
-        address[2] memory players
-    ) private view returns (bool) {
-        if (players[0] == msg.sender) {
-            return true;
-        } else if (players[1] == msg.sender) {
-            return false;
-        }
-        revert("Player not found in battle");
-    }
-
-    // Function to reward the player with experience based on the difficulty level of the fight and check the required amount for leveling up
-    function rewardExperience(uint16 monsterId, uint8 difficultyLevel) private {
-        // require(
-        //     msg.sender == CryptoMon.ownerOf(monsterId),
-        //     "You don't own this monster."
-        // );
-        require(
-            CryptoMon.monsters[monsterId].level < CryptoMon.MAX_LEVEL,
-            "Monster is already at max level."
-        );
-        //  require(
-        //      difficultyLevel <= MAX_LEVEL,
-        //      "Enemy level is not valid."
-        //  );
-
-        // Calculate the amount of experience to be rewarded based on the difficulty level
-        uint16 experienceReward = calculateExperienceReward(difficultyLevel);
-
-        // Update the monster's experience points
-        CryptoMon.monsters[monsterId].experience += experienceReward;
-
-        // Check if the monster should level up after receiving the experience reward
-
-        uint16 requiredExperience = experienceRequiredForLevel(
-            CryptoMon.monsters[monsterId].level
-        );
-        if (CryptoMon.monsters[monsterId].experience >= requiredExperience) {
-            CryptoMon.monsters[monsterId].level++;
-            if (
-                !CryptoMon.monsters[monsterId].evolved &&
-                CryptoMon.monsters[monsterId].level >= CryptoMon.MAX_LEVEL / 2
-            ) {
-                CryptoMon.monsters[monsterId].evolved = true;
-                // Get the index of the last skill in the skill set
-                uint256 lastSkillIndex = CryptoMon.monsters[monsterId]
-                    .monsterType
-                    .skillSet
-                    .length - 1;
-                CryptoMon.monsters[monsterId].cooldowns.push(
-                    CryptoMon.monsters[monsterId]
-                        .monsterType
-                        .skillSet[lastSkillIndex]
-                        .cooldown
-                );
-            }
-        }
-    }
-
-    // Function to calculate required experience points for a specific level
-    function experienceRequiredForLevel(
-        uint8 level
-    ) private pure returns (uint16) {
-        return level * 10;
-    }
-
-    // Function to calculate the amount of experience to be rewarded based on the difficulty level
-    function calculateExperienceReward(
-        uint8 difficultyLevel
-    ) private pure returns (uint16) {
-        return difficultyLevel; // Reward difficulty level amount of experience points
-    }*/
 }
