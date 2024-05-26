@@ -11,7 +11,7 @@ import "./Battle.sol";
  *      It includes features such as monster ownership, battle system, rewards distribution, leveling, and tournaments.
  *      The code is open-source and transparent to ensure fairness and trust in the game mechanics.
  */
-contract TournamentManager is Ownable {
+contract TournamentManager {
     MonBattle private battleContract;
     uint256 private totalTournaments;
 
@@ -48,13 +48,18 @@ contract TournamentManager is Ownable {
     event BattleEnded(uint256 indexed tournamentId, address winner);
     event TournamentEnded(uint256 indexed tournamentId, address winner);
 
-    constructor(address _battleContract) Ownable(_battleContract) {
+    constructor(address _battleContract) {
         // Initialize the Battles contract
         battleContract = MonBattle(_battleContract);
         totalTournaments = 0;
     }
 
+    function getPlayer(uint256 tournamentId, address playerAddress) external view returns(Player memory){
+        return tournaments[tournamentId].players[playerAddress];
+    }
+
     function createTournament(uint8 _maxPlayers) external {
+        require((_maxPlayers % 2) == 0,"Max player number have to be even.");
         Tournament storage newTournament = tournaments[totalTournaments++];
         newTournament.tournamentStatus = TournamentStatus.PENDING;
         newTournament.host = msg.sender;
@@ -147,15 +152,6 @@ contract TournamentManager is Ownable {
         );
 
         tournament.tournamentStatus = TournamentStatus.STARTED;
-        // Randomize player order
-        for (uint256 i = 0; i < tournament.playerNum; i++) {
-            uint256 n = i +
-                (uint256(keccak256(abi.encodePacked(block.timestamp))) %
-                    (tournament.playerNum - i));
-            address temp = tournament.playerAddresses[n];
-            tournament.playerAddresses[n] = tournament.playerAddresses[i];
-            tournament.playerAddresses[i] = temp;
-        }
 
         _createBracket(tournamentId);
     }
@@ -187,7 +183,7 @@ contract TournamentManager is Ownable {
         emit TournamentRoundStarted(tournamentId,tournament.currentRound);
     }
 
-    function onBattleEnded(uint256 battleId, address winner) external {
+    function onBattleEnded( address winner) external {
         //uint256 tournamentId = battleContract.getBattleTournament(battleId);
         uint256 tournamentId =0;
         Tournament storage tournament = tournaments[tournamentId];

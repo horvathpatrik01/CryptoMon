@@ -138,7 +138,10 @@ contract MonBattle is Ownable {
         uint16 targetId,
         uint256 skillId
     ) external {
-        require(battleIndex < _totalBattles, "Invalid battle index");
+        require(
+            battleIndex < _totalBattles,
+            "Invalid battle index"
+        );
         require(
             msg.sender == cryptoMon.ownerOf(attackerId),
             "You don't own this monster."
@@ -181,6 +184,7 @@ contract MonBattle is Ownable {
         require(attacker.health > 0, "Attacker is already defeated.");
 
         Skill memory skill = attacker.monsterType.skillSet[skillId];
+        console.log(attacker.cooldowns[skillId]);
         // Check if skill cooldown is expired
         require(attacker.cooldowns[skillId] == 0, "Skill is on cooldown");
 
@@ -239,7 +243,7 @@ contract MonBattle is Ownable {
                 : target.health + skillDamage;
 
             // Switch turn to the other player
-            battle.firstPlayersTurn = !battle.firstPlayersTurn;
+            battles[battleIndex].firstPlayersTurn = !battle.firstPlayersTurn;
             // Update the attacker cooldown and target monster hp
             cryptoMon.setMonsterHealth(targetId, target.health);
             cryptoMon.setMonsterCooldowns(attackerId, attacker.cooldowns);
@@ -267,8 +271,8 @@ contract MonBattle is Ownable {
         }
         // If all monsters in the opposing team are defeated, end the battle
         if (allDefeated) {
-            battle.battleStatus = BattleStatus.ENDED;
-            battle.winner = msg.sender;
+            battles[battleIndex].battleStatus = BattleStatus.ENDED;
+            battles[battleIndex].winner = msg.sender;
             emit BattleEnded(msg.sender, battleIndex);
 
             // Calculate experience rewards for the winning player's monsters based on the opponent's monsters' average level
@@ -288,8 +292,9 @@ contract MonBattle is Ownable {
                     avgLevel
                 );
             }
+            return;
         }
         // Switch turn to the other player
-        battle.firstPlayersTurn = !battle.firstPlayersTurn;
+        battles[battleIndex].firstPlayersTurn = !battle.firstPlayersTurn;
     }
 }

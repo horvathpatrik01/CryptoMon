@@ -196,7 +196,6 @@ contract MonsterTypes is Ownable{
     ) public onlyOwner {
         require(multiplierValue > 0, "Value must be greater than zero.");
         require(bytes(name).length > 0, "Name cannot be empty.");
-        require(cooldown > 0, "Cooldown must be greater than zero.");
 
         // Add the new skill to the mapping
         skills[_skillId] = Skill({
@@ -220,7 +219,6 @@ contract MonsterTypes is Ownable{
     ) public onlyOwner {
         require(multiplierValue > 0, "Value must be greater than zero.");
         require(bytes(name).length > 0, "Name cannot be empty.");
-        require(cooldown > 0, "Cooldown must be greater than zero.");
         require(
             (bytes(skills[skillId].name).length) > 0,
             "This skill does not exist."

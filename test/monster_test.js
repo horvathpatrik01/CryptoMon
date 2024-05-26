@@ -14,31 +14,26 @@ describe("CryptoMon Contract", function () {
   async function cryptoMonFixture() {
     [owner, user1, user2] = await ethers.getSigners();
     // Deploy the MonsterTypeContract
-    const MonsterTypeContractFactory = await ethers.getContractFactory(
-      "MonsterTypes"
-    );
+    const MonsterTypeContractFactory = await ethers.getContractFactory("MonsterTypes");
     monsterTypeContract = await MonsterTypeContractFactory.deploy(await owner.getAddress());
     await monsterTypeContract.waitForDeployment();
-    console.log(
-      "MonsterTypeContract deployed to:",
-      await monsterTypeContract.getAddress()
-    );
+    //console.log("MonsterTypeContract deployed to:",await monsterTypeContract.getAddress());
 
     // Deploy the CryptoMon contract
     const CryptoMonFactory = await ethers.getContractFactory("CryptoMon");
     cryptoMon = await CryptoMonFactory.deploy(await owner.getAddress());
     await cryptoMon.waitForDeployment();
-    console.log("CryptoMon deployed to:", await cryptoMon.getAddress());
+    //console.log("CryptoMon deployed to:", await cryptoMon.getAddress());
 
     // Set the MonsterTypeContract address in the CryptoMon contract
     await cryptoMon.setContract(await monsterTypeContract.getAddress());
-    console.log("MonsterTypeContract address set in CryptoMon");
+    //console.log("MonsterTypeContract address set in CryptoMon");
 
     // Deploy the BattleContract and pass the CryptoMon address
     const BattleFactory = await ethers.getContractFactory("MonBattle");
     battleContract = await BattleFactory.deploy(await cryptoMon.getAddress());
     await battleContract.waitForDeployment();
-    console.log("BattleContract deployed to:", await battleContract.getAddress());
+    //console.log("BattleContract deployed to:", await battleContract.getAddress());
     // Set the authorized contract in CryptoMon
     await cryptoMon.setBattleContract(await user1.getAddress());
     return {
