@@ -190,23 +190,5 @@ describe("Battle Contract", function () {
       expect(target.health).to.be.equal(0);
       expect(attacker.experience).to.be.above(0);
     });
-
-    it.skip("should apply healing correctly and not switch turn if the skill is Heal", async function () {
-      // Add monsters to players
-      await cryptoMon.mintMonster(addr1.address, 1, 50, 20); // low health for testing
-      await cryptoMon.mintMonster(addr2.address, 2, 100, 20);
-
-      // Create a battle
-      await monBattle.connect(addr1).startBattle([1]);
-      await monBattle.connect(addr2).joinBattle(addr1.address, [2]);
-
-      // Use a healing skill (assuming skillId 1 is Heal)
-      await monBattle.connect(addr1).useSkill(0, 1, 1, 1);
-
-      // Check the healing results
-      const attacker = await cryptoMon.getMonster(1);
-      expect(attacker.health).to.be.above(50);
-      expect(attacker.health).to.be.at.most(attacker.maxHp);
-    });
   });
 });
